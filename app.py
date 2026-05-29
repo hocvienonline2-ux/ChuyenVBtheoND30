@@ -224,7 +224,7 @@ with col2:
 st.info("💡 Các thông tin cố định như Quốc hiệu, Tiêu ngữ, Số hiệu, Đánh số trang (không đánh trang 1), Nơi nhận, Chức danh người ký sẽ được tạo tự động.")
 
 st.subheader("2. Nội dung văn bản")
-user_input = st.text_area("Dán nội dung do AI tạo ra vào đây:", height=300)
+user_input = st.text_area("Dán nội dung phần thân VB (có thể do AI tạo ra) vào đây:", height=300)
 
 if st.button("⚡ Tiến hành tạo file Word"):
     if not input_ban_hanh.strip():
