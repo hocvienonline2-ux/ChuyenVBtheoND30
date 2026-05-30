@@ -193,7 +193,7 @@ def generate_nd30_docx(chu_quan, ban_hanh, text_content):
 # 3. GIAO DIỆN NGƯỜI DÙNG STREAMLIT
 # ==========================================
 st.title("📄 Ứng Dụng Chuẩn Hóa Văn Bản Hành Chính")
-st.markdown("Chuyển đổi nội dung từ AI thành file Word (`.docx`) đúng định dạng **Nghị định 30/2020/NĐ-CP**.")
+st.markdown("Chuyển đổi nội dung văn bản (từ AI) thành file Word (`.docx`) đúng định dạng **Nghị định 30/2020/NĐ-CP**.")
 
 st.subheader("1. Thông tin cơ quan")
 col1, col2 = st.columns(2)
