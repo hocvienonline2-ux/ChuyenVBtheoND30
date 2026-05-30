@@ -1,5 +1,5 @@
 import io
-import re  # Thư viện nhận diện cấu trúc in đậm của AI
+import re
 import streamlit as st
 from docx import Document
 from docx.shared import Pt, Cm, Mm
@@ -123,35 +123,65 @@ def generate_nd30_docx(chu_quan, ban_hanh, text_content):
     format_text_run(run_date, size_pt=13, bold=False, italic=True)
 
     # ==========================================
-    # PHẦN THÂN VĂN BẢN (Cỡ chữ 13, Giữ nguyên định dạng gốc)
+    # PHẦN THÂN VĂN BẢN (Cỡ chữ 13, Tự động format)
     # ==========================================
     p_space1 = doc.add_paragraph()
     p_space1.paragraph_format.space_before = Pt(12)
 
-    # Cắt văn bản theo từng lần xuống dòng
-    paragraphs = text_content.split('\n')
+    # Dùng splitlines() để xử lý mọi loại dấu xuống dòng
+    paragraphs = text_content.splitlines()
     for p_text in paragraphs:
-        # Nếu dòng trống (do người dùng Enter nhiều lần), giữ nguyên khoảng trống
-        if p_text.strip() == "":
-            doc.add_paragraph()
-            continue
+        p_text = p_text.strip()
+        if not p_text:
+            continue # Bỏ qua các dòng trống để văn bản gọn gàng
             
         p = doc.add_paragraph()
         p.alignment = WD_PARAGRAPH_ALIGNMENT.JUSTIFY 
-        p.paragraph_format.first_line_indent = Cm(1.0) 
         p.paragraph_format.line_spacing = 1.15       
         p.paragraph_format.space_after = Pt(6)       
-        
-        # Nhận diện chữ in đậm bằng ký tự Markdown **...**
-        parts = re.split(r'(\*\*.*?\*\*)', p_text)
-        for part in parts:
-            if part.startswith('**') and part.endswith('**'):
-                # Là chữ in đậm (Cắt bỏ 2 dấu ** ở 2 đầu)
-                run_body = p.add_run(part[2:-2])
-                format_text_run(run_body, size_pt=13, bold=True)
-            elif part:
-                # Là chữ bình thường (Được giữ nguyên dạng Hoa/thường gốc)
-                run_body = p.add_run(part)
+
+        # --- QUY TẮC 1: Dòng viết IN HOA TOÀN BỘ (Ví dụ: BÁO CÁO) ---
+        if p_text.isupper() and len(p_text) > 3:
+            p.paragraph_format.first_line_indent = Cm(0) # Không lùi đầu dòng
+            # Nếu là chữ BÁO CÁO, TỜ TRÌNH, QUYẾT ĐỊNH -> Căn giữa
+            if any(kw in p_text for kw in ["BÁO CÁO", "TỜ TRÌNH", "QUYẾT ĐỊNH"]):
+                p.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+            run_body = p.add_run(p_text)
+            format_text_run(run_body, size_pt=13, bold=True)
+            continue
+
+        # --- QUY TẮC 2: Các đề mục bắt đầu bằng số (Ví dụ: 1., 2.1., I., II.) ---
+        if re.match(r'^([IVX0-9]+[\.\/])\s+', p_text):
+            p.paragraph_format.first_line_indent = Cm(0) # Đề mục không lùi đầu dòng
+            run_body = p.add_run(p_text)
+            format_text_run(run_body, size_pt=13, bold=True) # In đậm cả dòng
+            continue
+
+        # Các dòng văn bản bình thường -> Lùi đầu dòng 1cm
+        p.paragraph_format.first_line_indent = Cm(1.0) 
+
+        # --- QUY TẮC 3: Xử lý định dạng Markdown **in đậm** gốc (nếu có) ---
+        if '**' in p_text:
+            parts = re.split(r'(\*\*.*?\*\*)', p_text)
+            for part in parts:
+                if part.startswith('**') and part.endswith('**'):
+                    run_body = p.add_run(part[2:-2])
+                    format_text_run(run_body, size_pt=13, bold=True)
+                elif part:
+                    run_body = p.add_run(part)
+                    format_text_run(run_body, size_pt=13, bold=False)
+        else:
+            # --- QUY TẮC 4: Tự động in đậm cụm từ trước dấu hai chấm (Ví dụ: Thuận lợi:) ---
+            colon_split = p_text.split(':', 1)
+            # Chỉ in đậm nếu vế trước dấu hai chấm là 1 cụm từ ngắn (<= 6 từ)
+            if len(colon_split) == 2 and 0 < len(colon_split[0].split()) <= 6:
+                run_b = p.add_run(colon_split[0] + ':')
+                format_text_run(run_b, size_pt=13, bold=True)
+                run_n = p.add_run(colon_split[1])
+                format_text_run(run_n, size_pt=13, bold=False)
+            else:
+                # Văn bản bình thường
+                run_body = p.add_run(p_text)
                 format_text_run(run_body, size_pt=13, bold=False)
 
     # ==========================================
@@ -218,7 +248,7 @@ with col2:
         placeholder="Ví dụ: SỞ THÔNG TIN VÀ TRUYỀN THÔNG"
     )
 
-st.info("💡 Ứng dụng tự động giữ nguyên các lần xuống dòng, chữ hoa, chữ thường và chữ **in đậm** (nếu nội dung AI có chứa ký hiệu Markdown `**`).")
+st.info("💡 Ứng dụng đã được trang bị bộ lọc nhận diện thông minh: Tự động in đậm chữ IN HOA, in đậm các đề mục (1., 2.) và các ý chính (Thuận lợi:, Khó khăn:).")
 
 st.subheader("2. Nội dung văn bản")
 user_input = st.text_area("Dán nội dung do AI tạo ra vào đây:", height=300)
