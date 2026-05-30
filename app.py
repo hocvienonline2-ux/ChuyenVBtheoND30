@@ -37,7 +37,7 @@ def add_page_number(run):
 # ==========================================
 # 2. HÀM TẠO FILE DOCX ĐÚNG CHUẨN NĐ 30
 # ==========================================
-def generate_nd30_docx(chu_quan, ban_hanh, text_content):
+def generate_nd30_docx(chu_quan, ban_hanh, chuc_danh, text_content):
     doc = Document()
     
     # Định dạng Khổ giấy A4 và Lề trang
@@ -181,7 +181,8 @@ def generate_nd30_docx(chu_quan, ban_hanh, text_content):
     p_cv.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
     p_cv.paragraph_format.line_spacing = 1.0
     p_cv.paragraph_format.space_after = Pt(0)
-    run_cv = p_cv.add_run("TRƯỞNG PHÒNG")
+    # Lấy giá trị chức danh từ giao diện truyền vào
+    run_cv = p_cv.add_run(chuc_danh)
     format_text_run(run_cv, size_pt=13, bold=True)
 
     buffer = io.BytesIO()
@@ -208,6 +209,13 @@ with col2:
         placeholder="Ví dụ: PHÒNG HÀNH CHÍNH"
     )
 
+# Thêm hộp thoại thả xuống cho Chức danh
+input_chuc_danh = st.selectbox(
+    "Chức danh người ký:",
+    options=["CHỦ TỊCH HĐQT", "GIÁM ĐỐC", "TRƯỞNG PHÒNG"],
+    index=2  # Thiết lập mặc định hiển thị là TRƯỞNG PHÒNG
+)
+
 st.info("💡 Các thông tin cố định như Quốc hiệu, Tiêu ngữ, Số hiệu, Đánh số trang (không đánh trang 1), Nơi nhận, Chức danh người ký sẽ được tạo tự động.")
 
 st.subheader("2. Nội dung văn bản")
@@ -220,7 +228,8 @@ if st.button("⚡ Tiến hành tạo file Word"):
         st.warning("Vui lòng nhập nội dung thân văn bản.")
     else:
         with st.spinner("Đang xử lý định dạng..."):
-            docx_file = generate_nd30_docx(input_chu_quan, input_ban_hanh, user_input)
+            # Truyền thêm biến input_chuc_danh vào hàm xử lý
+            docx_file = generate_nd30_docx(input_chu_quan, input_ban_hanh, input_chuc_danh, user_input)
             
             st.success("🎉 Đã chuẩn hóa định dạng thành công!")
             st.download_button(
