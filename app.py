@@ -212,7 +212,7 @@ with col2:
 # Thêm hộp thoại thả xuống cho Chức danh
 input_chuc_danh = st.selectbox(
     "Chức danh người ký:",
-    options=["CHỦ TỊCH HĐQT", "GIÁM ĐỐC", "TRƯỞNG PHÒNG"],
+    options=["CHỦ TỊCH HĐQT", "GIÁM ĐỐC", "TRƯỞNG PHÒNG", "TRƯỞNG KHOA"],
     index=2  # Thiết lập mặc định hiển thị là TRƯỞNG PHÒNG
 )
 
