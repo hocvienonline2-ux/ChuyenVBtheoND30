@@ -192,7 +192,7 @@ def generate_nd30_docx(chu_quan, ban_hanh, text_content):
 # ==========================================
 # 3. GIAO DIỆN NGƯỜI DÙNG STREAMLIT
 # ==========================================
-st.title("📄 Ứng Dụng Chuẩn Hóa Văn Bản Hành Chính")
+st.title("📄 ỨNG DỤNG CHUẨN HÓA VĂN BẢN HÀNH CHÍNH")
 st.markdown("Chuyển đổi nội dung văn bản (từ AI) thành file Word (`.docx`) đúng định dạng **Nghị định 30/2020/NĐ-CP**.")
 
 st.subheader("1. Thông tin cơ quan")
@@ -200,18 +200,18 @@ col1, col2 = st.columns(2)
 with col1:
     input_chu_quan = st.text_input(
         "Cơ quan chủ quản (nếu có):", 
-        placeholder="Ví dụ: UBND TỈNH KIÊN GIANG"
+        placeholder="Ví dụ: BỆNH VIỆN BÌNH AN"
     )
 with col2:
     input_ban_hanh = st.text_input(
         "Cơ quan ban hành văn bản *", 
-        placeholder="Ví dụ: SỞ THÔNG TIN VÀ TRUYỀN THÔNG"
+        placeholder="Ví dụ: PHÒNG HÀNH CHÍNH"
     )
 
 st.info("💡 Các thông tin cố định như Quốc hiệu, Tiêu ngữ, Số hiệu, Đánh số trang (không đánh trang 1), Nơi nhận, Chức danh người ký sẽ được tạo tự động.")
 
 st.subheader("2. Nội dung văn bản")
-user_input = st.text_area("Dán nội dung phần thân văn bản vào đây:", height=300)
+user_input = st.text_area("Dán nội dung phần thân văn bản vào đây, nếu có dạng bảng biểu/hình ảnh thì sau khi chương trình tạo xong file .docx rồi hãy copy vào sau:", height=300)
 
 if st.button("⚡ Tiến hành tạo file Word"):
     if not input_ban_hanh.strip():
