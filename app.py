@@ -1,4 +1,5 @@
 import io
+import re  # Thư viện nhận diện cấu trúc in đậm của AI
 import streamlit as st
 from docx import Document
 from docx.shared import Pt, Cm, Mm
@@ -12,37 +13,27 @@ from docx.oxml.ns import nsdecls, qn
 st.set_page_config(page_title="Tạo Văn Bản Chuẩn NĐ 30", page_icon="📄", layout="centered")
 
 def hide_table_borders(table):
-    """Hàm ẩn đường viền của bảng trong Word"""
     tblPr = table._tbl.tblPr
     borders = parse_xml(r'<w:tblBorders %s><w:top w:val="none"/><w:left w:val="none"/><w:bottom w:val="none"/><w:right w:val="none"/><w:insideH w:val="none"/><w:insideV w:val="none"/></w:tblBorders>' % nsdecls('w'))
     tblPr.append(borders)
 
 def format_text_run(run, font_name="Times New Roman", size_pt=13, bold=False, italic=False):
-    """Hàm định dạng nhanh cho chữ"""
     run.font.name = font_name
     run.font.size = Pt(size_pt)
     run.bold = bold
     run.italic = italic
 
 def add_page_number(run):
-    """Hàm chèn trường (Field) số trang tự động vào Word qua XML"""
     fldChar1 = OxmlElement('w:fldChar')
     fldChar1.set(qn('w:fldCharType'), 'begin')
-    
     instrText = OxmlElement('w:instrText')
     instrText.set(qn('xml:space'), 'preserve')
     instrText.text = "PAGE"
-    
     fldChar2 = OxmlElement('w:fldChar')
     fldChar2.set(qn('w:fldCharType'), 'separate')
-    
     fldChar3 = OxmlElement('w:fldChar')
     fldChar3.set(qn('w:fldCharType'), 'end')
-
-    run._r.append(fldChar1)
-    run._r.append(instrText)
-    run._r.append(fldChar2)
-    run._r.append(fldChar3)
+    run._r.extend([fldChar1, instrText, fldChar2, fldChar3])
 
 # ==========================================
 # 2. HÀM TẠO FILE DOCX ĐÚNG CHUẨN NĐ 30
@@ -59,22 +50,16 @@ def generate_nd30_docx(chu_quan, ban_hanh, text_content):
         section.left_margin = Cm(3.0)   
         section.right_margin = Cm(2.0)  
 
-        # --- ĐÁNH SỐ TRANG THEO NĐ 30 ---
-        # Bật chế độ: Không đánh số trang cho trang đầu tiên
         section.different_first_page_header_footer = True 
-        
-        # Thiết lập Header (lề trên) cho các trang từ trang 2 trở đi
         header = section.header
         header_para = header.paragraphs[0] if header.paragraphs else header.add_paragraph()
         header_para.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
         
         run_page = header_para.add_run()
         add_page_number(run_page)
-        format_text_run(run_page, size_pt=13, bold=False) # Cỡ 13, chữ đứng thường
+        format_text_run(run_page, size_pt=13, bold=False)
 
-    # ==========================================
-    # PHẦN ĐẦU TRANG (BẢNG 1 HÀNG 2 CỘT)
-    # ==========================================
+    # --- PHẦN ĐẦU TRANG ---
     table = doc.add_table(rows=1, cols=2)
     hide_table_borders(table)
     table.columns[0].width = Cm(7.0)
@@ -83,7 +68,6 @@ def generate_nd30_docx(chu_quan, ban_hanh, text_content):
     cell_left = table.cell(0, 0)
     cell_right = table.cell(0, 1)
     
-    # --- CỘT TRÁI: CƠ QUAN BAN HÀNH & SỐ KÝ HIỆU ---
     p_left_1 = cell_left.paragraphs[0]
     p_left_1.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
     p_left_1.paragraph_format.line_spacing = 1.0
@@ -110,7 +94,6 @@ def generate_nd30_docx(chu_quan, ban_hanh, text_content):
     run_so = p_left_so.add_run("Số: ....../...............")
     format_text_run(run_so, size_pt=13, bold=False)
 
-    # --- CỘT PHẢI: QUỐC HIỆU, TIÊU NGỮ & ĐỊA DANH ---
     p_right_qh = cell_right.paragraphs[0]
     p_right_qh.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
     p_right_qh.paragraph_format.line_spacing = 1.0
@@ -140,22 +123,36 @@ def generate_nd30_docx(chu_quan, ban_hanh, text_content):
     format_text_run(run_date, size_pt=13, bold=False, italic=True)
 
     # ==========================================
-    # PHẦN THÂN VĂN BẢN (Cỡ chữ 13)
+    # PHẦN THÂN VĂN BẢN (Cỡ chữ 13, Giữ nguyên định dạng gốc)
     # ==========================================
     p_space1 = doc.add_paragraph()
     p_space1.paragraph_format.space_before = Pt(12)
 
+    # Cắt văn bản theo từng lần xuống dòng
     paragraphs = text_content.split('\n')
     for p_text in paragraphs:
-        if p_text.strip():
-            p = doc.add_paragraph()
-            p.alignment = WD_PARAGRAPH_ALIGNMENT.JUSTIFY 
-            p.paragraph_format.first_line_indent = Cm(1.0) 
-            p.paragraph_format.line_spacing = 1.15       
-            p.paragraph_format.space_after = Pt(6)       
+        # Nếu dòng trống (do người dùng Enter nhiều lần), giữ nguyên khoảng trống
+        if p_text.strip() == "":
+            doc.add_paragraph()
+            continue
             
-            run_body = p.add_run(p_text.strip())
-            format_text_run(run_body, size_pt=13, bold=False)
+        p = doc.add_paragraph()
+        p.alignment = WD_PARAGRAPH_ALIGNMENT.JUSTIFY 
+        p.paragraph_format.first_line_indent = Cm(1.0) 
+        p.paragraph_format.line_spacing = 1.15       
+        p.paragraph_format.space_after = Pt(6)       
+        
+        # Nhận diện chữ in đậm bằng ký tự Markdown **...**
+        parts = re.split(r'(\*\*.*?\*\*)', p_text)
+        for part in parts:
+            if part.startswith('**') and part.endswith('**'):
+                # Là chữ in đậm (Cắt bỏ 2 dấu ** ở 2 đầu)
+                run_body = p.add_run(part[2:-2])
+                format_text_run(run_body, size_pt=13, bold=True)
+            elif part:
+                # Là chữ bình thường (Được giữ nguyên dạng Hoa/thường gốc)
+                run_body = p.add_run(part)
+                format_text_run(run_body, size_pt=13, bold=False)
 
     # ==========================================
     # PHẦN CUỐI TRANG: NƠI NHẬN & CHỮ KÝ
@@ -206,7 +203,7 @@ def generate_nd30_docx(chu_quan, ban_hanh, text_content):
 # 3. GIAO DIỆN NGƯỜI DÙNG STREAMLIT
 # ==========================================
 st.title("📄 Ứng Dụng Chuẩn Hóa Văn Bản Hành Chính")
-st.markdown("Chuyển đổi nội dung VB (có thể do AI tạo) thành file Word (`.docx`) đúng định dạng **Nghị định 30/2020/NĐ-CP**.")
+st.markdown("Chuyển đổi nội dung từ AI thành file Word (`.docx`) đúng định dạng **Nghị định 30/2020/NĐ-CP**.")
 
 st.subheader("1. Thông tin cơ quan")
 col1, col2 = st.columns(2)
@@ -221,10 +218,10 @@ with col2:
         placeholder="Ví dụ: SỞ THÔNG TIN VÀ TRUYỀN THÔNG"
     )
 
-st.info("💡 Các thông tin cố định như Quốc hiệu, Tiêu ngữ, Số hiệu, Đánh số trang (không đánh trang 1), Nơi nhận, Chức danh người ký sẽ được tạo tự động.")
+st.info("💡 Ứng dụng tự động giữ nguyên các lần xuống dòng, chữ hoa, chữ thường và chữ **in đậm** (nếu nội dung AI có chứa ký hiệu Markdown `**`).")
 
 st.subheader("2. Nội dung văn bản")
-user_input = st.text_area("Dán nội dung phần thân VB (có thể do AI tạo ra) vào đây:", height=300)
+user_input = st.text_area("Dán nội dung do AI tạo ra vào đây:", height=300)
 
 if st.button("⚡ Tiến hành tạo file Word"):
     if not input_ban_hanh.strip():
