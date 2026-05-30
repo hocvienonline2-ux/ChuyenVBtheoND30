@@ -208,10 +208,10 @@ with col2:
         placeholder="Ví dụ: SỞ THÔNG TIN VÀ TRUYỀN THÔNG"
     )
 
-st.info("💡 Ứng dụng sẽ giữ nguyên tuyệt đối các khoảng cách, các đoạn, và các lần xuống dòng theo đúng đoạn văn bản bạn dán vào bên dưới.")
+st.info("💡 Các thông tin cố định như Quốc hiệu, Tiêu ngữ, Số hiệu, Đánh số trang (không đánh trang 1), Nơi nhận, Chức danh người ký sẽ được tạo tự động.")
 
 st.subheader("2. Nội dung văn bản")
-user_input = st.text_area("Dán nội dung vào đây:", height=300)
+user_input = st.text_area("Dán nội dung phần thân văn bản vào đây:", height=300)
 
 if st.button("⚡ Tiến hành tạo file Word"):
     if not input_ban_hanh.strip():
